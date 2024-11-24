@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email = ['francois@lasercats.fr']
   spec.summary = 'AT Protocol client implementation for Ruby'
   spec.description = 'A Ruby client for the AT Protocol authenticated request'
-  spec.homepage = 'https://github.com/lasercats/atproto_client'
+  spec.homepage = 'https://github.com/lasercats/atproto-ruby'
   spec.license = 'MIT'
 
   spec.files = Dir['{lib}/**/*', 'LICENSE', 'README.md']

@@ -1,6 +1,7 @@
 # ATProto Client
 
 Ruby client for the AT Protocol, with support for oauth/dpop authentication. It has been built and tested for bluesky but it should be agnostic of PDS. An omniauth strategy using this layer should appear soon.
+The work is in progress but it should allready work and I'd be happy to have feedbacks.
 
 ## Installation
 
@@ -45,7 +46,7 @@ After checking out the repo, run `bin/setup` to install dependencies. Then, run 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/lasercats/atproto_client.
+Bug reports and pull requests are welcome on GitHub at https://github.com/lasercats/atproto-ruby.
 
 ## License
 
