@@ -3,11 +3,13 @@ module AtProto
   class DpopHandler
     # Initialize a new DPoP handler
     # @param private_key [OpenSSL::PKey::EC, nil] Optional private key for signing tokens
-    def initialize(private_key = nil)
+    # @param access_token [String] Optional access_token
+    def initialize(private_key = nil, access_token = nil)
       @private_key = private_key || generate_private_key
       @current_nonce = nil
       @nonce_mutex = Mutex.new
       @token_mutex = Mutex.new
+      @access_token = access_token
     end
 
     # Generates a DPoP token for a request
@@ -71,6 +73,15 @@ module AtProto
         iat: Time.now.to_i,
         exp: Time.now.to_i + 120
       }
+
+      # Ajout du hachage du token d'accès si fourni
+      if @access_token
+        token_str = @access_token.to_s
+        sha256 = OpenSSL::Digest.new('SHA256')
+        hash_bytes = sha256.digest(token_str)
+        ath = Base64.urlsafe_encode64(hash_bytes, padding: false)
+        payload[:ath] = ath
+      end
 
       payload[:nonce] = nonce if nonce
 

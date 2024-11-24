@@ -17,7 +17,7 @@ module AtProto
         @dpop_handler.make_request(
           uri.to_s,
           method,
-          headers: { 'Authorization' => "Bearer #{@access_token}" },
+          headers: { 'Authorization' => "DPoP #{@access_token}" },
           body: body
         )
       rescue TokenExpiredError => e

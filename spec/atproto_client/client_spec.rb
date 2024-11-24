@@ -29,7 +29,7 @@ RSpec.describe AtProto::Client do
         .with(
           "#{url}?foo=bar",
           method,
-          headers: { 'Authorization' => "Bearer #{access_token}" },
+          headers: { 'Authorization' => "DPoP #{access_token}" },
           body: body
         )
         .and_return(double('response'))
@@ -45,7 +45,7 @@ RSpec.describe AtProto::Client do
           .with(
             url,
             method,
-            headers: { 'Authorization' => "Bearer #{access_token}" },
+            headers: { 'Authorization' => "DPoP #{access_token}" },
             body: nil
           )
           .and_raise(AtProto::TokenExpiredError)
@@ -57,7 +57,7 @@ RSpec.describe AtProto::Client do
           .with(
             url,
             method,
-            headers: { 'Authorization' => "Bearer #{access_token}" },
+            headers: { 'Authorization' => "DPoP #{access_token}" },
             body: nil
           )
           .and_return(success_response)
@@ -74,7 +74,7 @@ RSpec.describe AtProto::Client do
             .with(
               url,
               method,
-              headers: { 'Authorization' => "Bearer #{access_token}" },
+              headers: { 'Authorization' => "DPoP #{access_token}" },
               body: nil
             )
             .and_raise(AtProto::TokenExpiredError)

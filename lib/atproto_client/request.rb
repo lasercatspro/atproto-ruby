@@ -59,11 +59,9 @@ module AtProto
 
     def handle_response(response)
       case response.code.to_i
-      when 400
+      when 400..499
         body = JSON.parse(response.body)
         response.error! if body['error'] == 'use_dpop_nonce'
-      when 401
-        body = JSON.parse(response.body)
         raise TokenExpiredError if body['error'] == 'TokenExpiredError'
 
         raise AuthError, "Unauthorized: #{body['error']}"
