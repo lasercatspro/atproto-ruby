@@ -3,6 +3,12 @@
 Ruby client for the AT Protocol, with support for oauth/dpop authentication. It has been built and tested for bluesky but it should be agnostic of PDS. An omniauth strategy using this layer should appear soon.
 The work is in progress but it should allready work and I'd be happy to have feedbacks.
 
+### TODO
+- [ ] Reject response without DPoP-Nonce header (to respect the spec)
+- [ ] Try to reuse nonce better (currently we double each request to refresh it from the server each time)
+- [ ] Give a better API (it changes at a hight rate currently)
+
+
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -14,22 +20,23 @@ gem 'atproto_client'
 ## Usage
 
 ```ruby
-# Configure the client (optional)
-AtProto.configure do |config|
-  config.base_url = "https://bsky.social"  # default
-end
 
 # Initialize a client
-client = AtProto::Client.new(access_token, refresh_token)
+client = AtProto::Client.new(
+  access_token: access_token, 
+  refresh_token: refresh_token,
+  private_key: private_key_used_for_access_token_creation, 
+  refresh_token_url: "https://the-token-server.com" # optional, defaults do https://bsky.social
+)
 
 # Should be able to fetch collections
-client.make_api_request(
+client.request(
   :get,
   "#{PDS_URL}/xrpc/#{lexicon}",
   params:{ repo: "did:therepodid", collection: "app.bsky.feed.post"}
 )
 
-# Also gives a handful DPOP handler for any request (here an oauth example)
+# Also gives a handful DPOP handler for any request (here an omniauth example)
 dpop_handler = AtProto::DpopHandler.new(options.dpop_private_key)
 response = @dpop_handler.make_request(
   token_url,
@@ -37,6 +44,8 @@ response = @dpop_handler.make_request(
   headers: { "Content-Type" => "application/json", "Accept" => "application/json" },
   body: token_params
 )
+
+# you can then use the access_token from the response in conjunction with the same private_key
 
 ```
 

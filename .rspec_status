@@ -1,19 +1,18 @@
 example_id                                          | status | run_time        |
 --------------------------------------------------- | ------ | --------------- |
-./spec/atproto_client/client_spec.rb[1:1:1]         | passed | 0.00045 seconds |
-./spec/atproto_client/client_spec.rb[1:1:2]         | passed | 0.00405 seconds |
-./spec/atproto_client/client_spec.rb[1:2:1]         | passed | 0.00051 seconds |
-./spec/atproto_client/client_spec.rb[1:2:2:1]       | passed | 0.00057 seconds |
-./spec/atproto_client/client_spec.rb[1:2:2:2:1]     | passed | 0.00126 seconds |
-./spec/atproto_client/client_spec.rb[1:3:1]         | passed | 0.00266 seconds |
-./spec/atproto_client/client_spec.rb[1:3:2:1]       | passed | 0.00077 seconds |
-./spec/atproto_client/dpop_handler_spec.rb[1:1:1]   | passed | 0.00122 seconds |
-./spec/atproto_client/dpop_handler_spec.rb[1:1:2]   | passed | 0.00024 seconds |
-./spec/atproto_client/dpop_handler_spec.rb[1:2:1]   | passed | 0.00077 seconds |
-./spec/atproto_client/dpop_handler_spec.rb[1:2:2]   | passed | 0.00184 seconds |
-./spec/atproto_client/dpop_handler_spec.rb[1:2:3:1] | passed | 0.00062 seconds |
+./spec/atproto_client/client_spec.rb[1:1:1]         | passed | 0.00103 seconds |
+./spec/atproto_client/client_spec.rb[1:2:1]         | passed | 0.0039 seconds  |
+./spec/atproto_client/client_spec.rb[1:2:2:1]       | passed | 0.00062 seconds |
+./spec/atproto_client/client_spec.rb[1:2:2:2:1]     | passed | 0.00117 seconds |
+./spec/atproto_client/client_spec.rb[1:3:1]         | passed | 0.00261 seconds |
+./spec/atproto_client/client_spec.rb[1:3:2:1]       | passed | 0.00069 seconds |
+./spec/atproto_client/dpop_handler_spec.rb[1:1:1]   | passed | 0.00053 seconds |
+./spec/atproto_client/dpop_handler_spec.rb[1:1:2]   | passed | 0.00011 seconds |
+./spec/atproto_client/dpop_handler_spec.rb[1:2:1]   | passed | 0.00066 seconds |
+./spec/atproto_client/dpop_handler_spec.rb[1:2:2]   | passed | 0.00185 seconds |
+./spec/atproto_client/dpop_handler_spec.rb[1:2:3:1] | passed | 0.00057 seconds |
 ./spec/atproto_client/dpop_handler_spec.rb[1:2:4:1] | passed | 0.00173 seconds |
-./spec/atproto_client/dpop_handler_spec.rb[1:2:5:1] | passed | 0.00057 seconds |
-./spec/atproto_client/dpop_handler_spec.rb[1:3:1]   | passed | 0.0002 seconds  |
-./spec/atproto_client/dpop_handler_spec.rb[1:4:1]   | passed | 0.00069 seconds |
-./spec/atproto_client/dpop_handler_spec.rb[1:4:2:1] | passed | 0.00077 seconds |
+./spec/atproto_client/dpop_handler_spec.rb[1:2:5:1] | passed | 0.00051 seconds |
+./spec/atproto_client/dpop_handler_spec.rb[1:3:1]   | passed | 0.00028 seconds |
+./spec/atproto_client/dpop_handler_spec.rb[1:4:1]   | passed | 0.0006 seconds  |
+./spec/atproto_client/dpop_handler_spec.rb[1:4:2:1] | passed | 0.00076 seconds |

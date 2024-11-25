@@ -3,29 +3,30 @@ require 'spec_helper'
 RSpec.describe AtProto::Client do
   let(:access_token) { 'test_access_token' }
   let(:refresh_token) { 'test_refresh_token' }
-  let(:dpop_handler) { instance_double('AtProto::DpopHandler') }
-  let(:client) { described_class.new(access_token, refresh_token, dpop_handler) }
+  let(:private_key) { OpenSSL::PKey::EC.generate('prime256v1') }
+  let(:client) do
+    described_class.new(
+      access_token: access_token,
+      refresh_token: refresh_token,
+      private_key: private_key
+    )
+  end
 
   describe '#initialize' do
     it 'sets access and refresh tokens' do
       expect(client.access_token).to eq(access_token)
       expect(client.refresh_token).to eq(refresh_token)
     end
-
-    it 'creates a default DpopHandler when none provided' do
-      expect(AtProto::DpopHandler).to receive(:new)
-      described_class.new(access_token, refresh_token)
-    end
   end
 
-  describe '#make_api_request' do
+  describe '#request' do
     let(:url) { 'https://api.example.com/endpoint' }
     let(:method) { :get }
     let(:params) { { foo: 'bar' } }
     let(:body) { { data: 'test' } }
 
     it 'makes a request with correct parameters' do
-      expect(dpop_handler).to receive(:make_request)
+      expect(client.dpop_handler).to receive(:make_request)
         .with(
           "#{url}?foo=bar",
           method,
@@ -34,14 +35,14 @@ RSpec.describe AtProto::Client do
         )
         .and_return(double('response'))
 
-      client.make_api_request(method, url, params: params, body: body)
+      client.request(method, url, params: params, body: body)
     end
 
     context 'when token is expired' do
       let(:success_response) { double('success_response') }
 
       it 'retries once after refreshing token' do
-        expect(dpop_handler).to receive(:make_request)
+        expect(client.dpop_handler).to receive(:make_request)
           .with(
             url,
             method,
@@ -53,7 +54,7 @@ RSpec.describe AtProto::Client do
 
         expect(client).to receive(:refresh_access_token!).ordered
 
-        expect(dpop_handler).to receive(:make_request)
+        expect(client.dpop_handler).to receive(:make_request)
           .with(
             url,
             method,
@@ -63,14 +64,14 @@ RSpec.describe AtProto::Client do
           .and_return(success_response)
           .ordered
 
-        expect(client.make_api_request(method, url)).to eq(success_response)
+        expect(client.request(method, url)).to eq(success_response)
       end
 
       context 'when no refresh token is available' do
         let(:refresh_token) { nil }
 
         it 'raises TokenExpiredError without retrying' do
-          expect(dpop_handler).to receive(:make_request)
+          expect(client.dpop_handler).to receive(:make_request)
             .with(
               url,
               method,
@@ -84,7 +85,7 @@ RSpec.describe AtProto::Client do
           expect(client).not_to receive(:refresh_access_token!)
 
           # The error should be raised to the caller
-          expect { client.make_api_request(method, url) }
+          expect { client.request(method, url) }
             .to raise_error(AtProto::TokenExpiredError)
         end
       end
@@ -106,8 +107,7 @@ RSpec.describe AtProto::Client do
     end
 
     before do
-      allow(AtProto::DpopHandler).to receive(:new).and_return(dpop_handler)
-      allow(dpop_handler).to receive(:make_request).and_return(refresh_response)
+      allow(client.dpop_handler).to receive(:make_request).and_return(refresh_response)
       allow(AtProto.configuration).to receive(:base_url).and_return('https://api.example.com')
     end
 
