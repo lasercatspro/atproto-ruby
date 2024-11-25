@@ -39,6 +39,27 @@ RSpec.describe AtProto::DpopHandler do
       expect(decoded_token['exp']).to be_a(Integer)
     end
 
+    context 'with access token' do
+      let(:access_token) { 'test-access-token-123' }
+      let(:handler) { described_class.new(private_key, access_token) }
+      let(:token) { handler.generate_token(http_method, url) }
+      let(:decoded_token) { JWT.decode(token, private_key, true, { algorithm: 'ES256' }).first }
+
+      it 'includes correct ath claim' do
+        expected_ath = Base64.urlsafe_encode64(
+          OpenSSL::Digest.new('SHA256').digest(access_token),
+          padding: false
+        )
+        expect(decoded_token['ath']).to eq(expected_ath)
+      end
+    end
+
+    context 'without access token' do
+      it 'does not include ath claim' do
+        expect(decoded_token).not_to have_key('ath')
+      end
+    end
+
     context 'with nonce' do
       let(:nonce) { 'test-nonce-123' }
       let(:token_with_nonce) { handler.generate_token(http_method, url, nonce) }

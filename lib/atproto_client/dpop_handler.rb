@@ -63,7 +63,6 @@ module AtProto
       OpenSSL::PKey::EC.generate('prime256v1').tap(&:check_key)
     end
 
-    # Creates a DPoP token with the specified parameters, encoded by jwk
     def create_dpop_token(http_method, target_uri, nonce = nil)
       jwk = JWT::JWK.new(@private_key).export
       payload = {
@@ -73,19 +72,15 @@ module AtProto
         iat: Time.now.to_i,
         exp: Time.now.to_i + 120
       }
-
-      # Ajout du hachage du token d'accès si fourni
-      if @access_token
-        token_str = @access_token.to_s
-        sha256 = OpenSSL::Digest.new('SHA256')
-        hash_bytes = sha256.digest(token_str)
-        ath = Base64.urlsafe_encode64(hash_bytes, padding: false)
-        payload[:ath] = ath
-      end
-
+      payload[:ath] = generate_ath if @access_token
       payload[:nonce] = nonce if nonce
 
       JWT.encode(payload, @private_key, 'ES256', { typ: 'dpop+jwt', alg: 'ES256', jwk: jwk })
+    end
+
+    def generate_ath
+      hash_bytes = OpenSSL::Digest.new('SHA256').digest(@access_token)
+      Base64.urlsafe_encode64(hash_bytes, padding: false)
     end
   end
 end
