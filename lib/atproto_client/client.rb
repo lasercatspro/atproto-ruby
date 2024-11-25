@@ -20,7 +20,7 @@ module AtProto
       @access_token = access_token
       @refresh_token = refresh_token
       @refresh_token_url = refresh_token_url
-      @dpop_handler = DpopHandler.new(private_key)
+      @dpop_handler = DpopHandler.new(private_key, access_token)
       @token_mutex = Mutex.new
     end
 
@@ -29,7 +29,7 @@ module AtProto
     # @param private_key [OpenSSL::PKey::EC] The EC private key to use for signing DPoP tokens (required)
     # @raise [ArgumentError] If private_key is not an OpenSSL::PKey::EC instance
     def private_key=(private_key)
-      @dpop_handler = @dpop_handler.new(private_key)
+      @dpop_handler = @dpop_handler.new(private_key, @access_token)
     end
 
     # Makes an authenticated HTTP request with automatic token refresh
