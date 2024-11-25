@@ -108,7 +108,6 @@ RSpec.describe AtProto::Client do
 
     before do
       allow(client.dpop_handler).to receive(:make_request).and_return(refresh_response)
-      allow(AtProto.configuration).to receive(:base_url).and_return('https://api.example.com')
     end
 
     it 'updates tokens after successful refresh' do

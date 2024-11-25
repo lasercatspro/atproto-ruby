@@ -19,7 +19,6 @@ module AtProto
   class APIError < Error; end
 end
 
-require 'atproto_client/configuration'
 require 'atproto_client/client'
 require 'atproto_client/dpop_handler'
 require 'atproto_client/request'
