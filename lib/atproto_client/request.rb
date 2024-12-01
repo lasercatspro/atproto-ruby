@@ -64,7 +64,7 @@ module AtProto
         response.error! if body['error'] == 'use_dpop_nonce'
         raise TokenExpiredError if body['error'] == 'TokenExpiredError'
 
-        raise AuthError, "Unauthorized: #{body['error']}"
+        raise AuthError, "Unauthorized: #{body.values_at('error', 'message').compact.join(' - ')}"
       when 200..299
         JSON.parse(response.body)
       else
