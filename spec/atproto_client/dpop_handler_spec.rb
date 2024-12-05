@@ -102,6 +102,17 @@ RSpec.describe AtProto::DpopHandler do
       handler.make_request(url, 'POST')
     end
 
+    it 'allows setting custom headers' do
+      custom_headers = { 'Content-Type' => 'image/jpeg' }
+      expect(AtProto::Request).to receive(:new).with(
+        'POST',
+        url,
+        hash_including(custom_headers)
+      )
+
+      handler.make_request(url, 'POST', headers: custom_headers)
+    end
+
     context 'with retry on nonce error' do
       let(:error_response) { double('error_response', to_hash: { 'dpop-nonce' => ['retry-nonce'] }) }
       let(:error) { Net::HTTPClientException.new('error', error_response) }
