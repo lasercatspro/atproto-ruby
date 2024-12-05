@@ -113,6 +113,11 @@ RSpec.describe AtProto::DpopHandler do
       handler.make_request(url, 'POST', headers: custom_headers)
     end
 
+    it 'allows setting a binary body' do
+      binary_data = File.binread('spec/fixtures/cat.jpg')
+      expect { handler.make_request(url, 'POST', body: binary_data) }.not_to raise_error
+    end
+
     context 'with retry on nonce error' do
       let(:error_response) { double('error_response', to_hash: { 'dpop-nonce' => ['retry-nonce'] }) }
       let(:error) { Net::HTTPClientException.new('error', error_response) }
