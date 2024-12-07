@@ -16,10 +16,15 @@ module AtProto
     # @param refresh_token_url [String] The base URL for token refresh requests
     #
     # @raise [ArgumentError] If private_key is not provided or not an OpenSSL::PKey::EC instance
-    def initialize(access_token:, refresh_token:, private_key:, refresh_token_url: 'https://bsky.social')
+    def initialize(access_token:, refresh_token:, private_key:, client_id:, jwk: nil, refresh_token_url: nil, site: nil)
+      puts "jwk #{jwk.present?}"
       @access_token = access_token
       @refresh_token = refresh_token
+      @client_id = client_id
+      @jwk = jwk
       @refresh_token_url = refresh_token_url
+      @private_key = private_key
+      @site = site
       @dpop_handler = DpopHandler.new(private_key, access_token)
       @token_mutex = Mutex.new
     end
@@ -63,30 +68,79 @@ module AtProto
       end
     end
 
-    private
-
     # Refreshes the access token using the refresh token
     #
     # @private
     #
-    # @raise [RefreshTokenError] When the token refresh request fails
+    # @raise [AuthError] When the token refresh request fails
     def refresh_access_token!
       @token_mutex.synchronize do
-        response = @dpop_handler.make_request(
-          "#{@refresh_token_url}/xrpc/com.atproto.server.refreshSession",
+        response = DpopHandler.new(@private_key).make_request(
+          @refresh_token_url,
           :post,
-          headers: {},
-          body: { refresh_token: @refresh_token }
+          headers: {
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json'
+          },
+          body: refresh_token_params
         )
-
-        unless response.is_a?(Net::HTTPSuccess)
-          raise RefreshTokenError, "Failed to refresh token: #{response.code} - #{response.body}"
-        end
-
-        data = JSON.parse(response.body)
-        @access_token = data['access_token']
-        @refresh_token = data['refresh_token']
+        @access_token = response['access_token']
+        @refresh_token = response['refresh_token']
       end
+    end
+
+    # Gives params for refresh_token exchange request
+    #
+    # @return [Hash] The params hash
+    def refresh_token_params
+      {
+        grant_type: 'refresh_token',
+        refresh_token: @refresh_token,
+        **base_token_params
+      }
+    end
+
+    # Gives base params for access_token exchange request,
+    # code and redirect_uri should be added
+    #
+    # @return [Hash] The params hash
+    def token_params
+      { grant_type: 'authorization_code', **base_token_params }
+    end
+
+    private
+
+    def base_token_params
+      {
+        client_id: @client_id,
+        client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+        client_assertion: generate_client_assertion
+      }
+    end
+
+    def generate_client_assertion
+      raise 'Client ID is required' unless @client_id
+      raise 'Client JWK is required' unless @jwk
+
+      jwt_payload = {
+        iss: @client_id,
+        sub: @client_id,
+        aud: @site,
+        jti: SecureRandom.uuid,
+        iat: Time.current.to_i,
+        exp: Time.current.to_i + 300
+      }
+
+      JWT.encode(
+        jwt_payload,
+        @private_key,
+        'ES256',
+        {
+          typ: 'jwt',
+          alg: 'ES256',
+          kid: @jwk[:kid]
+        }
+      )
     end
   end
 end
