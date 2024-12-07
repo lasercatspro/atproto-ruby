@@ -45,7 +45,7 @@ module AtProto
       begin
         dpop_token = generate_token(method.to_s.upcase, uri.to_s)
         request = Request.new(method, uri, headers.merge('DPoP' => dpop_token))
-        request.body = body.to_json if body
+        request.body = body.is_a?(Hash) ? body.to_json : body if body
         request.run
       rescue Net::HTTPClientException => e
         unless retried

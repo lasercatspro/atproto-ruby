@@ -52,6 +52,20 @@ RSpec.describe AtProto::Request do
       request.run
     end
 
+    it 'allows overriding headers' do
+      custom_headers = { 'Content-Type' => 'image/jpeg' }
+      request = described_class.new(method, uri, headers.merge(custom_headers), body)
+
+      mock_request = instance_double(Net::HTTP::Post)
+      allow(Net::HTTP::Post).to receive(:new).and_return(mock_request)
+      allow(mock_request).to receive(:[]=)
+      allow(mock_request).to receive(:body=)
+
+      expect(mock_request).to receive(:[]=).with('Content-Type', 'image/jpeg')
+
+      request.run
+    end
+
     context 'when response is successful' do
       it 'returns parsed JSON response' do
         expect(request.run).to eq({ 'result' => 'success' })

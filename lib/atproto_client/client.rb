@@ -43,7 +43,7 @@ module AtProto
     #
     # @raise [TokenExpiredError] When token refresh fails
     # @raise [RefreshTokenError] When unable to refresh the access token
-    def request(method, url, params: {}, body: nil)
+    def request(method, url, params: {}, body: nil, headers: {})
       retries = 0
       begin
         uri = URI(url)
@@ -51,7 +51,7 @@ module AtProto
         @dpop_handler.make_request(
           uri.to_s,
           method,
-          headers: { 'Authorization' => "DPoP #{@access_token}" },
+          headers: { 'Authorization' => "DPoP #{@access_token}" }.merge(headers),
           body: body
         )
       rescue TokenExpiredError => e
