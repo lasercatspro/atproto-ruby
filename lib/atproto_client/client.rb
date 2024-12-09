@@ -39,13 +39,13 @@ module AtProto
     # @raise [TokenExpiredError] When the access token has expired
     # @raise [AuthError] When forbidden by the server for other reasons
     # @raise [APIError] On other errors from the server
-    def request(method, url, params: {}, body: nil)
+    def request(method, url, params: {}, body: nil, headers: {})
       uri = URI(url)
       uri.query = URI.encode_www_form(params) if params.any?
       @dpop_handler.make_request(
         uri.to_s,
         method,
-        headers: { 'Authorization' => "DPoP #{@access_token}" },
+        headers: { 'Authorization' => "DPoP #{@access_token}" }.merge(headers),
         body: body
       )
     end

@@ -38,6 +38,20 @@ RSpec.describe AtProto::Client do
       client.request(method, url, params: params, body: body)
     end
 
+    it 'allows setting custom headers' do
+      custom_headers = { 'Content-Type' => 'image/jpeg' }
+      expect(client.dpop_handler).to receive(:make_request)
+        .with(
+          "#{url}?foo=bar",
+          method,
+          headers: hash_including(custom_headers),
+          body: body
+        )
+        .and_return(double('response'))
+
+      client.request(method, url, params: params, body: body, headers: custom_headers)
+    end
+
     context 'when token is expired' do
       let(:success_response) { double('success_response') }
 

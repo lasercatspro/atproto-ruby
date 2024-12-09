@@ -37,9 +37,9 @@ module AtProto
     def run
       request_class = HTTP_METHODS[method]
       req = request_class.new(uri).tap do |request|
-        headers.each { |k, v| request[k] = v }
         request['Content-Type'] = 'application/json'
         request['Accept'] = 'application/json'
+        headers.each { |k, v| request[k] = v }
         request.body = body
       end
       response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
