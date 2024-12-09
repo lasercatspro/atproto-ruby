@@ -1,6 +1,8 @@
 module AtProto
   # Handler for DPoP (Demonstrating Proof-of-Possession) protocol implementation
   class DpopHandler
+    attr_accessor :private_key, :access_token
+
     # Initialize a new DPoP handler
     # @param private_key [OpenSSL::PKey::EC, nil] Optional private key for signing tokens
     # @param access_token [String] Optional access_token
