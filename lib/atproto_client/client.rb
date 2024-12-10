@@ -57,12 +57,13 @@ module AtProto
     # @param client_id [String] The client ID
     # @param site [String] The token audience
     # @param endpoint [String] The token endpoint URL
+    # @param redirect_uri [String] The application's oauth callback url
     #
     # @return [Hash] The token response
     # @raise [AuthError] When forbidden by the server
     # @raise [APIError] On other errors from the server
-    def get_token!(code:, jwk:, client_id:, site:, endpoint:)
-      response = DpopHandler.new(@private_key).make_request(
+    def get_token!(code:, jwk:, client_id:, site:, endpoint:, redirect_uri:)
+      response = @dpop_handler.make_request(
         endpoint,
         :post,
         headers: {
@@ -73,7 +74,8 @@ module AtProto
           code: code,
           jwk: jwk,
           client_id: client_id,
-          site: site
+          site: site,
+          redirect_uri: redirect_uri
         )
       )
       @access_token = response['access_token']
@@ -92,7 +94,8 @@ module AtProto
     # @raise [AuthError] When forbidden by the server
     # @raise [APIError] On other errors from the server
     def refresh_token!(refresh_token:, jwk:, client_id:, site:, endpoint:)
-      response = DpopHandler.new(@private_key).make_request(
+      @dpop_handler.access_token = nil
+      response = @dpop_handler.make_request(
         endpoint,
         :post,
         headers: {
@@ -113,9 +116,10 @@ module AtProto
 
     private
 
-    def token_params(code:, jwk:, client_id:, site:)
+    def token_params(code:, jwk:, client_id:, site:, redirect_uri:)
       {
         grant_type: 'authorization_code',
+        redirect_uri: redirect_uri,
         code: code,
         **base_token_params(jwk: jwk, client_id: client_id, site: site)
       }
@@ -143,8 +147,8 @@ module AtProto
         sub: client_id,
         aud: site,
         jti: SecureRandom.uuid,
-        iat: Time.current.to_i,
-        exp: Time.current.to_i + 300
+        iat: Time.now.to_i,
+        exp: Time.now.to_i + 300
       }
 
       JWT.encode(
