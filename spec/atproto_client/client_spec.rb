@@ -76,6 +76,7 @@ RSpec.describe AtProto::Client do
     let(:endpoint) { 'https://example.com/token' }
     let(:new_access_token) { 'new_access_token' }
     let(:redirect_uri) { 'https://example.com/oauth/callback' }
+    let(:code_verifier) { '12345' }
 
     let(:token_response) do
       {
@@ -95,7 +96,8 @@ RSpec.describe AtProto::Client do
         client_id: client_id,
         site: site,
         endpoint: endpoint,
-        redirect_uri: redirect_uri
+        redirect_uri: redirect_uri,
+        code_verifier: code_verifier
       )
       expect(client.access_token).to eq(new_access_token)
     end
@@ -114,7 +116,8 @@ RSpec.describe AtProto::Client do
             client_id: client_id,
             site: site,
             endpoint: endpoint,
-            redirect_uri: redirect_uri
+            redirect_uri: redirect_uri,
+            code_verifier: code_verifier
           )
         end.to raise_error(AtProto::AuthError, 'Invalid authorization code')
       end

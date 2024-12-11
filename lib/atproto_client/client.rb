@@ -62,7 +62,7 @@ module AtProto
     # @return [Hash] The token response
     # @raise [AuthError] When forbidden by the server
     # @raise [APIError] On other errors from the server
-    def get_token!(code:, jwk:, client_id:, site:, endpoint:, redirect_uri:)
+    def get_token!(code:, jwk:, client_id:, site:, endpoint:, redirect_uri:, code_verifier:)
       response = @dpop_handler.make_request(
         endpoint,
         :post,
@@ -75,7 +75,8 @@ module AtProto
           jwk: jwk,
           client_id: client_id,
           site: site,
-          redirect_uri: redirect_uri
+          redirect_uri: redirect_uri,
+          code_verifier: code_verifier
         )
       )
       @access_token = response['access_token']
@@ -116,11 +117,12 @@ module AtProto
 
     private
 
-    def token_params(code:, jwk:, client_id:, site:, redirect_uri:)
+    def token_params(code:, jwk:, client_id:, site:, redirect_uri:, code_verifier:)
       {
         grant_type: 'authorization_code',
         redirect_uri: redirect_uri,
         code: code,
+        code_verifier: code_verifier,
         **base_token_params(jwk: jwk, client_id: client_id, site: site)
       }
     end
