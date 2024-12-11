@@ -1,13 +1,6 @@
 # ATProto Client
 
-Ruby client for the AT Protocol, with support for oauth/dpop authentication. It has been built and tested for bluesky but it should be agnostic of PDS. An omniauth strategy using this layer should appear soon.
-The work is in progress but it should allready work and I'd be happy to have feedbacks.
-
-### TODO
-- [ ] Reject response without DPoP-Nonce header (to respect the spec)
-- [ ] Try to reuse nonce better (currently we double each request to refresh it from the server each time)
-- [ ] Give a better API (it changes at a hight rate currently)
-
+Ruby client for the AT Protocol, with support for oauth/dpop authentication.
 
 ## Installation
 
@@ -21,31 +14,51 @@ gem 'atproto_client'
 
 ```ruby
 
-# Initialize a client
-client = AtProto::Client.new(
-  access_token: access_token, 
-  refresh_token: refresh_token,
-  private_key: private_key_used_for_access_token_creation, 
-  refresh_token_url: "https://the-token-server.com" # optional, defaults do https://bsky.social
-)
+# Initialize with your private key and existing access token
+client = AtProto::Client.new(private_key:, access_token:)
 
-# Should be able to fetch collections
+# Then request
 client.request(
   :get,
   "https://boletus.us-west.host.bsky.network/xrpc/app.bsky.feed.getPostThread",
   params: { uri: "at://did:plc:sdy3olcdgcxvy3enfgsujz43/app.bsky.feed.post/3lbr6ey544s2k"}
 )
 
-# Also gives a handful DPOP handler for any request (here an omniauth example)
-dpop_handler = AtProto::DpopHandler.new(options.dpop_private_key)
-response = @dpop_handler.make_request(
-  token_url,
+# Body and params are optionals
+# Body will be stringified to json if it's a hash
+client.request(
   :post,
-  headers: { "Content-Type" => "application/json", "Accept" => "application/json" },
-  body: token_params
+  "#{pds_endpoint}/xrpc/com.atproto.repo.createRecord",
+  body: {
+    repo: did,
+    collection: "app.bsky.feed.post",
+    record: {
+      text: "Posting from ruby",
+      createdAt: Time.now.iso8601,
+    }
+  }
 )
 
-# you can then use the access_token from the response in conjunction with the same private_key
+# Can make requests with headers and custom body type 
+client.request(
+  :post,
+  "#{pds_endpoint}/xrpc/com.atproto.repo.uploadBlob",
+  body: image_data,
+  headers: {
+    "Content-Type": content_type,
+    "Content-Length": content_length
+  }
+)
+
+# Refresh token when needed
+# Tokens are returned so they can be stored
+client.refresh_token!(refresh_token:, jwk:, client_id:, site:, endpoint: )
+
+# Get initial access_token
+# (to be used in oauth flow -- see https://github.com/lasercatspro/omniauth-atproto)
+client = AtProto::Client.new(private_key: key)
+client.get_token!(code:, jwk:, client_id:, site:, endpoint:, code_verifier)
+
 ```
 ## Development
 

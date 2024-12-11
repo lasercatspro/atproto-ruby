@@ -1,27 +1,23 @@
 module AtProto
   # The Client class handles authenticated HTTP requests to the AT Protocol services
-  # with DPoP token support and automatic token refresh capabilities.
+  # with DPoP token support and token request capabilities.
   #
-  # @attr_reader [String] access_token The current access token for authentication
-  # @attr_reader [String] refresh_token The current refresh token for renewing access
+  # @attr_accessor [String] access_token The current access token for authentication
+  # @attr_accessor [String] private_key The private key corresponding to the public jwk of the app
   # @attr_reader [DpopHandler] dpop_handler The handler for DPoP token operations
   class Client
-    attr_reader :access_token, :refresh_token, :dpop_handler
+    attr_accessor :access_token, :dpop_handler
 
     # Initializes a new AT Protocol client
     #
-    # @param access_token [String] The initial access token for authentication
-    # @param refresh_token [String] The refresh token for renewing access tokens
     # @param private_key [OpenSSL::PKey::EC] The EC private key used for DPoP token signing (required)
-    # @param refresh_token_url [String] The base URL for token refresh requests
+    # @param access_token [String, nil] Optional access token for authentication
     #
     # @raise [ArgumentError] If private_key is not provided or not an OpenSSL::PKey::EC instance
-    def initialize(access_token:, refresh_token:, private_key:, refresh_token_url: 'https://bsky.social')
+    def initialize(private_key:, access_token: nil)
+      @private_key = private_key
       @access_token = access_token
-      @refresh_token = refresh_token
-      @refresh_token_url = refresh_token_url
       @dpop_handler = DpopHandler.new(private_key, access_token)
-      @token_mutex = Mutex.new
     end
 
     # Sets a new private key for DPoP token signing
@@ -32,61 +28,141 @@ module AtProto
       @dpop_handler = @dpop_handler.new(private_key, @access_token)
     end
 
-    # Makes an authenticated HTTP request with automatic token refresh
+    # Makes an authenticated HTTP request
     #
     # @param method [Symbol] The HTTP method to use (:get, :post, etc.)
     # @param url [String] The URL to send the request to
-    # @param params [Hash] Optional query parameters
-    # @param body [Hash, nil] Optional request body
+    # @param params [Hash] Optional query parameters to be added to the URL
+    # @param body [Hash, nil] Optional request body for POST/PUT requests
     #
-    # @return [Net::HTTPResponse] The HTTP response
-    #
-    # @raise [TokenExpiredError] When token refresh fails
-    # @raise [RefreshTokenError] When unable to refresh the access token
+    # @return [Hash] The parsed JSON response
+    # @raise [TokenExpiredError] When the access token has expired
+    # @raise [AuthError] When forbidden by the server for other reasons
+    # @raise [APIError] On other errors from the server
     def request(method, url, params: {}, body: nil, headers: {})
-      retries = 0
-      begin
-        uri = URI(url)
-        uri.query = URI.encode_www_form(params) if params.any?
-        @dpop_handler.make_request(
-          uri.to_s,
-          method,
-          headers: { 'Authorization' => "DPoP #{@access_token}" }.merge(headers),
-          body: body
-        )
-      rescue TokenExpiredError => e
-        raise e unless retries.zero? && @refresh_token
+      uri = URI(url)
+      uri.query = URI.encode_www_form(params) if params.any?
+      @dpop_handler.make_request(
+        uri.to_s,
+        method,
+        headers: { 'Authorization' => "DPoP #{@access_token}" }.merge(headers),
+        body: body
+      )
+    end
 
-        retries += 1
-        refresh_access_token!
-        retry
-      end
+    # Gets a new access token using an authorization code
+    #
+    # @param code [String] The authorization code
+    # @param jwk [Hash] The JWK for signing
+    # @param client_id [String] The client ID
+    # @param site [String] The token audience
+    # @param endpoint [String] The token endpoint URL
+    # @param redirect_uri [String] The application's oauth callback url
+    #
+    # @return [Hash] The token response
+    # @raise [AuthError] When forbidden by the server
+    # @raise [APIError] On other errors from the server
+    def get_token!(code:, jwk:, client_id:, site:, endpoint:, redirect_uri:, code_verifier:)
+      response = @dpop_handler.make_request(
+        endpoint,
+        :post,
+        headers: {
+          'Content-Type' => 'application/json',
+          'Accept' => 'application/json'
+        },
+        body: token_params(
+          code: code,
+          jwk: jwk,
+          client_id: client_id,
+          site: site,
+          redirect_uri: redirect_uri,
+          code_verifier: code_verifier
+        )
+      )
+      @access_token = response['access_token']
+      response
+    end
+
+    # Refreshes the access token using a refresh token
+    #
+    # @param refresh_token [String] The refresh token
+    # @param jwk [Hash] The JWK for signing
+    # @param client_id [String] The client ID
+    # @param site [String] The token audience
+    # @param endpoint [String] The token endpoint URL
+    #
+    # @return [Hash] The token response
+    # @raise [AuthError] When forbidden by the server
+    # @raise [APIError] On other errors from the server
+    def refresh_token!(refresh_token:, jwk:, client_id:, site:, endpoint:)
+      @dpop_handler.access_token = nil
+      response = @dpop_handler.make_request(
+        endpoint,
+        :post,
+        headers: {
+          'Content-Type' => 'application/json',
+          'Accept' => 'application/json'
+        },
+        body: refresh_token_params(
+          refresh_token: refresh_token,
+          jwk: jwk,
+          client_id: client_id,
+          site: site
+        )
+      )
+      @access_token = response['access_token']
+      @dpop_handler.access_token = @access_token
+      response
     end
 
     private
 
-    # Refreshes the access token using the refresh token
-    #
-    # @private
-    #
-    # @raise [RefreshTokenError] When the token refresh request fails
-    def refresh_access_token!
-      @token_mutex.synchronize do
-        response = @dpop_handler.make_request(
-          "#{@refresh_token_url}/xrpc/com.atproto.server.refreshSession",
-          :post,
-          headers: {},
-          body: { refresh_token: @refresh_token }
-        )
+    def token_params(code:, jwk:, client_id:, site:, redirect_uri:, code_verifier:)
+      {
+        grant_type: 'authorization_code',
+        redirect_uri: redirect_uri,
+        code: code,
+        code_verifier: code_verifier,
+        **base_token_params(jwk: jwk, client_id: client_id, site: site)
+      }
+    end
 
-        unless response.is_a?(Net::HTTPSuccess)
-          raise RefreshTokenError, "Failed to refresh token: #{response.code} - #{response.body}"
-        end
+    def refresh_token_params(refresh_token:, jwk:, client_id:, site:)
+      {
+        grant_type: 'refresh_token',
+        refresh_token: refresh_token,
+        **base_token_params(jwk: jwk, client_id: client_id, site: site)
+      }
+    end
 
-        data = JSON.parse(response.body)
-        @access_token = data['access_token']
-        @refresh_token = data['refresh_token']
-      end
+    def base_token_params(jwk:, client_id:, site:)
+      {
+        client_id: client_id,
+        client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+        client_assertion: generate_client_assertion(jwk: jwk, client_id: client_id, site: site)
+      }
+    end
+
+    def generate_client_assertion(jwk:, client_id:, site:)
+      jwt_payload = {
+        iss: client_id,
+        sub: client_id,
+        aud: site,
+        jti: SecureRandom.uuid,
+        iat: Time.now.to_i,
+        exp: Time.now.to_i + 300
+      }
+
+      JWT.encode(
+        jwt_payload,
+        @private_key,
+        'ES256',
+        {
+          typ: 'jwt',
+          alg: 'ES256',
+          kid: jwk[:kid]
+        }
+      )
     end
   end
 end
