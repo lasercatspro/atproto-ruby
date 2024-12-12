@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    atproto_client (0.1.2)
+    atproto_client (0.1.4)
       jwt (~> 2.7)
       openssl (~> 3.0)
 
